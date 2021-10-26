@@ -1,8 +1,6 @@
 from pydantic import BaseModel
-
 from fastapi import FastAPI, File, UploadFile, HTTPException
 import pandas as pd
-import json
 import joblib
 import uvicorn
 import sys
@@ -72,7 +70,7 @@ async def parsecsv(file: UploadFile = File(...)):
         if input_df.shape[0] == 0:
             raise HTTPException(status_code=400,
                             detail="Please, provide non-empty file with text data")
-                            
+
         predictions = model['logreg'].predict_as_name(
             model['union'].transform(input_df))
         roc_auc, accuracy = get_metrics(model, input_df)
@@ -88,8 +86,9 @@ async def parsecsv(file: UploadFile = File(...)):
 @app.post("/predict_json/")
 async def predict_json(text: Text):
     input_df = pd.DataFrame([text.dict()])
-    if len(input_df.columns) - len(input_df.dropna(axis=1, how='all').columns) != 0 or \
-            input_df.loc[:, (input_df == '').all()].shape[1] != 0:
+    if input_df.loc[:, (input_df.isnull()).all()].shape[1] == input_df.shape[1] or \
+            input_df.loc[:, (input_df == '').all()].shape[1] == input_df.shape[1] or \
+            input_df.shape[0] == 0:
         raise HTTPException(status_code=400,
                             detail="At least one attribute in JSON should be non-empty string")
 
